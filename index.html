@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mapsmith — Minecraft Map Art Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600;700&family=Martian+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect x='1' y='1' width='6' height='6' fill='%239fe870'/><rect x='9' y='1' width='6' height='6' fill='%23f2b95c'/><rect x='1' y='9' width='6' height='6' fill='%237cb6ff'/><rect x='9' y='9' width='6' height='6' fill='%23e8eaf0'/></svg>" />
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 20 20" aria-hidden="true">
+      <rect x="1" y="1" width="8" height="8" rx="1"/><rect x="11" y="1" width="8" height="8" rx="1"/>
+      <rect x="1" y="11" width="8" height="8" rx="1"/><rect x="11" y="11" width="8" height="8" rx="1"/>
+    </svg>
+    <h1>Mapsmith</h1>
+    <span class="brand-tag">map-art studio</span>
+  </div>
+  <div class="top-meta">
+    <span class="chip chip-ver" title="Litematics target this game version">Java <b>1.21.11</b> · DataVersion 4671</span>
+  </div>
+</header>
+
+<main class="layout">
+  <!-- ────────── left rail: inputs ────────── -->
+  <aside class="rail rail-left" id="railLeft">
+
+    <section class="card">
+      <h2 class="card-title">Image</h2>
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Load an image">
+        <svg viewBox="0 0 24 24" class="dz-ico" aria-hidden="true"><path d="M4 17V19H20V17M12 3 6 9H10V15H14V9H18Z" transform="rotate(180 12 11)"/></svg>
+        <p><b>Drop an image</b> or click to browse</p>
+        <p class="dz-sub">png · jpg · webp · gif</p>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" hidden />
+      <div class="img-meta" id="imgMeta" hidden>
+        <canvas id="thumb" width="44" height="44"></canvas>
+        <div class="img-meta-txt">
+          <span id="imgName">—</span>
+          <span class="sub" id="imgDims">—</span>
+        </div>
+        <button class="btn ghost sm" id="btnReplace">Replace</button>
+      </div>
+      <div class="samples">
+        <span class="sub">or try a sample:</span>
+        <button class="btn ghost sm" data-sample="aurora">Aurora</button>
+        <button class="btn ghost sm" data-sample="wheel">Wheel</button>
+        <button class="btn ghost sm" data-sample="testcard">Testcard</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Canvas <span class="card-note mono" id="outDims">128 × 128 px</span></h2>
+      <div class="row2">
+        <label class="field">
+          <span>Maps wide</span>
+          <div class="stepper"><button data-step="mapsX:-1">−</button><output id="mapsX">1</output><button data-step="mapsX:1">+</button></div>
+        </label>
+        <label class="field">
+          <span>Maps tall</span>
+          <div class="stepper"><button data-step="mapsY:-1">−</button><output id="mapsY">1</output><button data-step="mapsY:1">+</button></div>
+        </label>
+      </div>
+      <label class="field">
+        <span>Image fit</span>
+        <div class="seg" id="segFit">
+          <button data-v="cover" class="on">Crop</button><button data-v="contain">Fit</button><button data-v="stretch">Stretch</button>
+        </div>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Build</h2>
+      <label class="field">
+        <span>Surface</span>
+        <div class="seg" id="segMode">
+          <button data-v="staircase" class="on">Staircased</button><button data-v="flat">Flat</button>
+        </div>
+        <p class="hint" id="modeHint">3 shades per color — richer palette, blocks placed at varying heights.</p>
+      </label>
+      <label class="field" id="fieldStyle">
+        <span>Staircase solver</span>
+        <div class="seg" id="segStyle">
+          <button data-v="valley" class="on">Valley <em>optimized</em></button><button data-v="classic">Classic</button>
+        </div>
+      </label>
+      <label class="field">
+        <span>Support blocks</span>
+        <select id="selSupports">
+          <option value="none">None</option>
+          <option value="gravity" selected>Under gravity blocks</option>
+          <option value="all">Under every block</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Support / noobline block</span>
+        <select id="selSupportBlock"></select>
+      </label>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">Color</h2>
+      <label class="field">
+        <span>Dithering</span>
+        <select id="selDither">
+          <option value="none">None — nearest color</option>
+          <option value="floyd" selected>Floyd–Steinberg</option>
+          <option value="atkinson">Atkinson</option>
+          <option value="jarvis">Jarvis–Judice–Ninke</option>
+          <option value="bayer">Ordered (Bayer 4×4)</option>
+        </select>
+      </label>
+      <label class="field slider">
+        <span>Dither strength <output id="outStrength" class="mono">100%</output></span>
+        <input type="range" id="rngStrength" min="0" max="100" value="100" />
+      </label>
+      <label class="field slider">
+        <span>Brightness <output id="outBrightness" class="mono">0</output></span>
+        <input type="range" id="rngBrightness" min="-100" max="100" value="0" />
+      </label>
+      <label class="field slider">
+        <span>Contrast <output id="outContrast" class="mono">0</output></span>
+        <input type="range" id="rngContrast" min="-100" max="100" value="0" />
+      </label>
+      <label class="field slider">
+        <span>Saturation <output id="outSaturation" class="mono">0</output></span>
+        <input type="range" id="rngSaturation" min="-100" max="100" value="0" />
+      </label>
+      <button class="btn ghost sm" id="btnResetAdjust">Reset adjustments</button>
+    </section>
+
+    <section class="card" id="cardPalette">
+      <h2 class="card-title">Palette <span class="card-note mono" id="paletteCount"></span></h2>
+      <div class="chips" id="presetChips"></div>
+      <div class="pal-tools">
+        <input type="search" id="palSearch" placeholder="Search blocks…" />
+        <button class="btn ghost sm" id="palAll">All</button>
+        <button class="btn ghost sm" id="palNone">None</button>
+      </div>
+      <div class="pal-groups" id="palGroups"></div>
+      <div class="preset-save">
+        <input type="text" id="presetName" placeholder="Name this palette…" maxlength="24" />
+        <button class="btn sm" id="btnSavePreset">Save preset</button>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ────────── center: preview stage ────────── -->
+  <section class="stage">
+    <div class="stage-tools">
+      <div class="tool-group">
+        <div class="seg seg-view" id="segView">
+          <button data-v="map" class="on">Map view</button><button data-v="3d">Minecraft view</button>
+        </div>
+      </div>
+      <div class="tool-group" id="mapTools">
+        <button class="tool" id="btnZoomOut" title="Zoom out">−</button>
+        <span class="mono zoom-out" id="zoomLabel">—</span>
+        <button class="tool" id="btnZoomIn" title="Zoom in">+</button>
+        <button class="tool wide" id="btnFit" title="Fit to view">Fit</button>
+        <button class="tool wide" id="btn100" title="1 pixel = 1 block">1:1</button>
+        <button class="tool wide toggle on" id="btnGrid" title="Show 128×128 map boundaries">Map grid</button>
+        <button class="tool wide" id="btnCompare" title="Hold to see the original (or hold C)">◉ Hold to compare</button>
+      </div>
+    </div>
+    <div class="viewport" id="viewport">
+      <canvas id="view"></canvas>
+      <canvas id="view3d"></canvas>
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <rect x="6" y="6" width="16" height="16" rx="2"/><rect x="26" y="6" width="16" height="16" rx="2" opacity=".55"/>
+          <rect x="6" y="26" width="16" height="16" rx="2" opacity=".55"/><rect x="26" y="26" width="16" height="16" rx="2" opacity=".25"/>
+        </svg>
+        <h3>Paint with blocks</h3>
+        <p>Drop an image anywhere, or pick a sample from the left rail.<br/>Mapsmith converts it into survival-buildable map art.</p>
+      </div>
+      <div class="busy" id="busy" hidden><div class="busy-box"><span class="spinner"></span>Rendering blocks…</div></div>
+    </div>
+    <div class="statusbar">
+      <span class="mono" id="statusPos">—</span>
+      <span class="mono status-block" id="statusBlock"></span>
+      <span class="grow"></span>
+      <span class="mono sub" id="statusHint">wheel: zoom · drag: pan · C: compare</span>
+    </div>
+  </section>
+
+  <!-- ────────── right rail: output ────────── -->
+  <aside class="rail rail-right">
+    <section class="card">
+      <h2 class="card-title">Build stats</h2>
+      <div class="stats" id="stats">
+        <div class="stat"><span class="stat-v mono" id="stMaps">—</span><span class="stat-k">maps</span></div>
+        <div class="stat"><span class="stat-v mono" id="stBlocks">—</span><span class="stat-k">blocks</span></div>
+        <div class="stat"><span class="stat-v mono" id="stColors">—</span><span class="stat-k">colors used</span></div>
+        <div class="stat"><span class="stat-v mono" id="stHeight">—</span><span class="stat-k">build height</span></div>
+      </div>
+      <p class="hint warn" id="heightWarn" hidden>⚠ Taller than the 384-block world height — split the build or use flat mode.</p>
+    </section>
+
+    <section class="card card-materials">
+      <h2 class="card-title">Materials <button class="btn ghost sm" id="btnCopyMats" title="Copy as text">Copy</button></h2>
+      <div class="mats" id="mats"><p class="hint">Load an image to see the shopping list.</p></div>
+    </section>
+
+    <section class="card card-export">
+      <h2 class="card-title">Export</h2>
+      <label class="field">
+        <span>File name</span>
+        <div class="filefield"><input type="text" id="exportName" value="my_map_art" spellcheck="false" /><span class="mono">.litematic</span></div>
+      </label>
+      <button class="btn primary big" id="btnExport">⤓ Download .litematic</button>
+      <button class="btn ghost" id="btnExportPng">Export preview PNG</button>
+      <p class="hint">Load with the <b>Litematica</b> mod on 1.21.11. The extra row on the north edge is the noobline — it sets first-row shading and sits outside the map.</p>
+    </section>
+  </aside>
+</main>
+
+<div id="toasts" aria-live="polite"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
